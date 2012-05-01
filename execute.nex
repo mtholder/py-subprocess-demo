@@ -1,0 +1,7 @@
+#NEXUS
+begin paup;
+    execute simdata.nex ; 
+    hsearch nomultrees ; 
+    savetree file=inferred.tre format = NEXUS;
+    quit;
+end;
