@@ -104,46 +104,6 @@ def do_sim(birth_rate   , death_rate, num_leaves, rng):
     os.rmdir(temp_dir)
     
     return node_depth_TF_list
-from Queue import Queue
-from threading import Thread
-jobq = Queue()
-
-def worker():
-    rng = random.Random()
-    while True:
-        rep_num = jobq.get()
-        sys.stderr.write("%d started\n" % rep_num)
-        try:
-            do_rep(rep_num, birth_rate, death_rate, num_leaves, rng)
-        except:
-            from cStringIO import StringIO
-            import traceback
-            err = StringIO()
-            traceback.print_exc(file=err)
-            sys.stderr.write("Worker dying.  Error in job.start = %s" % err.getvalue())
-            sys.exit(1)
-        jobq.task_done()
-    return
-
-# We'll keep a list of Worker threads that are running in case any of our code triggers multiple calls
-_WORKER_THREADS = []
-
-def start_worker(num_workers):
-    """Spawns worker threads such that at least `num_workers` threads will be
-    launched for processing jobs in the jobq.
-
-    The only way that you can get more than `num_workers` threads is if you
-    have previously called the function with a number > `num_workers`.
-    (worker threads are never killed).
-    """
-    assert num_workers > 0, "A positive number must be passed as the number of worker threads"
-    num_currently_running = len(_WORKER_THREADS)
-    for i in range(num_currently_running, num_workers):
-        sys.stderr.write("Launching Worker thread #%d\n" % i)
-        t = Thread(target=worker)
-        _WORKER_THREADS.append(t)
-        t.setDaemon(True)
-        t.start()
 
 if __name__ == '__main__':
     num_leaves = int(sys.argv[1])
@@ -152,8 +112,6 @@ if __name__ == '__main__':
     assert birth_rate > 0.0
     death_rate = float(sys.argv[3])
     assert birth_rate >= 0.0
-    num_reps = int(sys.argv[4])
-    assert num_reps > 0
     
     rng = random.Random()
     if os.environ.get('TREE_INF_TEST_RAND_NUMBER_SEED'):
@@ -163,8 +121,7 @@ if __name__ == '__main__':
         seed = time.time()
     
     rng.seed(seed)
-    for i in range(num_reps):
-        jobq.put(i)
-
-    start_worker(4)
-    jobq.join()
+    node_depth_TF_list = do_sim(birth_rate, death_rate, num_leaves, rng)
+    summary = open('summary.csv', 'w')
+    for t in node_depth_TF_list:
+        summary.write("%f\t%f\t%d\n" % t)
