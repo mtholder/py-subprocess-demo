@@ -1,9 +1,9 @@
 This repository is for a demonstration of using python to invoke other 
     processes.
 
-#########
+
 master.sh
-#########
+--------
 If we want to repeat a multi-step, multi-executable pipeline, a shell script 
     is often the best choice.
     
@@ -43,9 +43,8 @@ Note:
                 of accessing the filesystem)
 
 
-##########
 master2.sh
-##########
+----------
 We can call seq-gen from within python. generate_data.py now creates the tree
 and tells seq-gen to create data on it (ignoring the fact that dendropy has a 
 wrapper around seq-gen, so we don't have to be this "low level").
