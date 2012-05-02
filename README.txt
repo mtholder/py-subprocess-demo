@@ -63,3 +63,11 @@ Note: We explicitly close the file that will constitute seq-gen's input. In
 Note:  we use communicate() to send data (we don't have anything to input to
     send, but this is still important to avoid seq-gen's output stream from 
     getting clogged).
+
+
+master3.sh
+----------
+Now our python script calls seq-gen and paup. Minor speed improvements.
+
+Note that we send commands to paup using the standard input stream (using
+communicate).
