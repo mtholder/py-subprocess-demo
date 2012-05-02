@@ -1,17 +1,19 @@
 #!/usr/bin/env python
-import sys, os
+import sys, os, tempfile
 import random
 from dendropy import treesim, treesplit, TreeList
 
-def do_sim(birth_rate, death_rate, num_leaves, rng):
-    
+def do_sim(birth_rate   , death_rate, num_leaves, rng):
+    temp_dir = tempfile.mkdtemp()
     model_tree = treesim.birth_death(birth_rate=birth_rate,
                             death_rate=death_rate,
                             ntax=num_leaves,
                             rng=rng)
     ################################################################################
     # Calling seq-gen
-    treefile_obj = open('simtree', 'w')
+    mtf = os.path.join(temp_dir, 'simtree')
+    print "temp_dir =", temp_dir
+    treefile_obj = open(mtf, 'w')
     treefile_obj.write("%s;\n" % str(model_tree))
     # CLOSING THE FILE IS IMPORTANT!  This flushes buffers, assuring that the data
     #  will be written to the filesystem before seq-gen is invoked.
@@ -27,7 +29,10 @@ def do_sim(birth_rate, death_rate, num_leaves, rng):
         command_line.append('-z%d' % seed)
     command_line.append('simtree')
     
-    seq_gen_proc = subprocess.Popen(command_line, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    seq_gen_proc = subprocess.Popen(command_line,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    cwd=temp_dir)
     
     dataset = seq_gen_proc.communicate()[0]
     
@@ -35,8 +40,8 @@ def do_sim(birth_rate, death_rate, num_leaves, rng):
     # seq-gen does not exit with an error code when it fails.  I don't know why!!
     if seq_gen_proc.returncode != 0 or len(dataset) == 0:
         sys.exit('seq-gen failed!\n')
-    
-    d = open('simdata.nex', 'w')
+    sd = os.path.join(temp_dir, 'simdata.nex')
+    d = open(sd, 'w')
     d.write(dataset)
     # CLOSING THE FILE IS IMPORTANT!  This flushes buffers, assuring that the data
     #  will be written to the filesystem before PAUP is invoked.
@@ -44,7 +49,7 @@ def do_sim(birth_rate, death_rate, num_leaves, rng):
     
     ################################################################################
     # PAUP
-    pcf = 'execute_paup.nex'
+    pcf = os.path.join(temp_dir, 'execute_paup.nex')
     pc = open(pcf, 'w')
     pc.write('''execute simdata.nex ; 
     hsearch nomultrees ; 
@@ -54,10 +59,11 @@ def do_sim(birth_rate, death_rate, num_leaves, rng):
     pc.close()
     paup_proc = subprocess.Popen(['paup', '-n', pcf], 
                                  stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+                                 stderr=subprocess.PIPE,
+                                 cwd=temp_dir)
     (o, e) = paup_proc.communicate()
     
-    paup_output = 'inferred.tre'
+    paup_output = os.path.join(temp_dir, 'inferred.tre')
     # seq-gen does not exit with an error code when it fails.  I don't know why!!
     if paup_proc.returncode != 0 or not os.path.exists(paup_output):
         sys.exit(e)
@@ -65,8 +71,8 @@ def do_sim(birth_rate, death_rate, num_leaves, rng):
     
     # read true tree with the inferred tree (because it is nexus)
     inf_tree_list = TreeList.get_from_path(paup_output, 
-                                                    "NEXUS",
-                                                    taxon_set=model_tree.taxon_set)
+                                           "NEXUS",
+                                           taxon_set=model_tree.taxon_set)
     assert len(inf_tree_list) == 1
     inferred_tree = inf_tree_list[0]
     
@@ -90,6 +96,13 @@ def do_sim(birth_rate, death_rate, num_leaves, rng):
             node.depth = 0.0
     
     node_depth_TF_list.sort()
+    
+    os.remove(pcf)
+    os.remove(paup_output)
+    os.remove(sd)
+    os.remove(mtf)
+    os.rmdir(temp_dir)
+    
     return node_depth_TF_list
 
 if __name__ == '__main__':
