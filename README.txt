@@ -71,3 +71,11 @@ Now our python script calls seq-gen and paup. Minor speed improvements.
 
 Note that we send commands to paup using the standard input stream (using
 communicate).
+
+
+master4.sh
+----------
+It is probably more stable to write paup's commands to a file.
+
+But the real payoff here is that we don't have to parse the model tree again.
+
