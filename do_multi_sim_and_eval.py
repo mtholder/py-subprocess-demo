@@ -123,8 +123,15 @@ from Queue import Queue
 from threading import Thread
 jobq = Queue()
 
-def worker():
+def worker(n):
     rng = random.Random()
+    if os.environ.get('TREE_INF_TEST_RAND_NUMBER_SEED'):
+        seed = int(os.environ.get('TREE_INF_TEST_RAND_NUMBER_SEED'))
+    else:
+        import time
+        seed = time.time()
+    
+    rng.jumpahead(n*45143)
     while True:
         rep_num = jobq.get()
         sys.stderr.write("%d started\n" % rep_num)
@@ -155,7 +162,7 @@ def start_worker(num_workers):
     num_currently_running = len(_WORKER_THREADS)
     for i in range(num_currently_running, num_workers):
         sys.stderr.write("Launching Worker thread #%d\n" % i)
-        t = Thread(target=worker)
+        t = Thread(target=lambda: worker(i))
         _WORKER_THREADS.append(t)
         t.setDaemon(True)
         t.start()
@@ -170,16 +177,10 @@ if __name__ == '__main__':
     num_reps = int(sys.argv[4])
     assert num_reps > 0
     
-    rng = random.Random()
-    if os.environ.get('TREE_INF_TEST_RAND_NUMBER_SEED'):
-        seed = int(os.environ.get('TREE_INF_TEST_RAND_NUMBER_SEED'))
-    else:
-        import time
-        seed = time.time()
-    
-    rng.seed(seed)
     for i in range(num_reps):
         jobq.put(i)
-
+    # this launches 4 worker threads. Each of these will call the function `worker`
     start_worker(4)
-    jobq.join()
+    
+    # this causes the process to wait until the queue is done
+    jobq.join() 
