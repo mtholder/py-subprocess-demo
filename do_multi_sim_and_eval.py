@@ -122,16 +122,17 @@ def do_rep(rep_num, birth_rate, death_rate, num_leaves, rng=None):
 from Queue import Queue
 from threading import Thread
 jobq = Queue()
-
-def worker(n):
+jumpq = Queue()
+def worker():
     rng = random.Random()
     if os.environ.get('TREE_INF_TEST_RAND_NUMBER_SEED'):
         seed = int(os.environ.get('TREE_INF_TEST_RAND_NUMBER_SEED'))
     else:
         import time
         seed = time.time()
-    
-    rng.jumpahead(n*45143)
+    jump = jumpq.get()
+    print "jump = ", jump
+    rng.jumpahead(jump*454361)
     while True:
         rep_num = jobq.get()
         sys.stderr.write("%d started\n" % rep_num)
@@ -159,10 +160,13 @@ def start_worker(num_workers):
     (worker threads are never killed).
     """
     assert num_workers > 0, "A positive number must be passed as the number of worker threads"
+    
     num_currently_running = len(_WORKER_THREADS)
     for i in range(num_currently_running, num_workers):
+        jumpq.put(i)
+    for i in range(num_currently_running, num_workers):
         sys.stderr.write("Launching Worker thread #%d\n" % i)
-        t = Thread(target=lambda: worker(i))
+        t = Thread(target=worker)
         _WORKER_THREADS.append(t)
         t.setDaemon(True)
         t.start()
