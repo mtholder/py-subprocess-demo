@@ -3,7 +3,7 @@ import sys, os, tempfile
 import random
 from dendropy import treesim, treesplit, TreeList
 
-def do_sim(birth_rate   , death_rate, num_leaves, rng):
+def do_sim(birth_rate   , death_rate, num_leaves, rng=None):
     temp_dir = tempfile.mkdtemp()
     model_tree = treesim.birth_death(birth_rate=birth_rate,
                             death_rate=death_rate,
@@ -26,7 +26,14 @@ def do_sim(birth_rate   , death_rate, num_leaves, rng):
                     '-on',
                 ]
     if os.environ.get('TREE_INF_TEST_RAND_NUMBER_SEED'):
-        command_line.append('-z%d' % seed)
+        sg_seed = seed
+        
+    else:
+        if rng is None:
+            sg_seed = random.randint(0,100000)
+        else:
+            sg_seed = rng.randint(0,100000)
+    command_line.append('-z%d' % sg_seed)
     command_line.append('simtree')
     
     seq_gen_proc = subprocess.Popen(command_line,
@@ -104,6 +111,14 @@ def do_sim(birth_rate   , death_rate, num_leaves, rng):
     os.rmdir(temp_dir)
     
     return node_depth_TF_list
+
+def do_rep(rep_num, birth_rate, death_rate, num_leaves, rng=None):
+    node_depth_TF_list = do_sim(birth_rate, death_rate, num_leaves, rng=rng)
+    summary = open('summary%d.csv' % rep_num, 'w')
+    for t in node_depth_TF_list:
+        summary.write("%f\t%f\t%d\n" % t)
+
+
 from Queue import Queue
 from threading import Thread
 jobq = Queue()
