@@ -79,3 +79,11 @@ It is probably more stable to write paup's commands to a file.
 
 But the real payoff here is that we don't have to parse the model tree again.
 
+We can use tempfile module to avoid cluttering our directory with lots of cruft
+    (and avoid name clashes of files).
+
+master5.sh
+----------
+By slightly refactoring we can do multiple simulation reps within one python 
+process, for a big speedup.
+
