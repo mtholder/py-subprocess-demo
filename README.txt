@@ -1,6 +1,9 @@
 This repository is for a demonstration of using python to invoke other 
     processes.
 
+#########
+master.sh
+#########
 If we want to repeat a multi-step, multi-executable pipeline, a shell script 
     is often the best choice.
     
@@ -38,3 +41,26 @@ Note:
                 random number seeds, and
             * it is not efficient (parsing overhead, and simply the slow speed 
                 of accessing the filesystem)
+
+
+##########
+master2.sh
+##########
+We can call seq-gen from within python. generate_data.py now creates the tree
+and tells seq-gen to create data on it (ignoring the fact that dendropy has a 
+wrapper around seq-gen, so we don't have to be this "low level").
+
+Note: We explicitly close the file that will constitute seq-gen's input. In
+    python, we often don't worry about closing file handles. They close as the
+    process exits. But in this case, we need to make sure that all of the data
+    that we want in the file is written before we call seq-gen.  This does not
+    (necessarily) happen when we call "write()" because the output may be 
+    buffered. This is important for efficiency, but it can be tricky.
+    
+    Flush your output files before you count on reading from them!
+    
+    
+
+Note:  we use communicate() to send data (we don't have anything to input to
+    send, but this is still important to avoid seq-gen's output stream from 
+    getting clogged).
